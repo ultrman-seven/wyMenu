@@ -2,6 +2,9 @@
 #include "stdlib.h"
 #include "stdio.h"
 
+// stack
+
+// stack push
 inline static void __MenuPush(menuCore *core, MenuUnit *__menu_val)
 {
     struct __menuChainNode *nd = (struct __menuChainNode *)malloc(sizeof(struct __menuChainNode));
@@ -9,6 +12,7 @@ inline static void __MenuPush(menuCore *core, MenuUnit *__menu_val)
     core->__node = nd;
     core->__node->val = __menu_val;
 }
+// stack pop
 inline static MenuUnit *__MenuPop(menuCore *core)
 {
     struct __menuChainNode *nd = core->__node;
@@ -24,6 +28,7 @@ inline static MenuUnit *__MenuPop(menuCore *core)
     return val;
 }
 
+// stack top
 inline static MenuUnit *__MenuTop(menuCore *core)
 {
     if (core->__node != NULL)
@@ -38,20 +43,29 @@ void menuInit(menuCore *core, MenuUnit *m, unsigned int maxDisplayLine)
     menuGotoNewPage(core, m);
 }
 
+char __MenuStr[64];
 void menuShow(menuCore *core)
 {
     MenuUnit *m = __MenuTop(core);
     unsigned short lineCnt = 0;
+    char *s;
     core->screenClear();
 
     if (core->currentFocusLine < core->maxDisplayLine)
     {
         while (m->id != __Menu_Id_End)
         {
-            if (lineCnt++ == core->currentFocusLine)
-                core->printFocus(m->caption);
+            if (m->id == __Menu_Id_Variable)
+            {
+                sprintf(__MenuStr, "%s : %d", m->caption, *(m->val));
+                s = __MenuStr;
+            }
             else
-                core->print(m->caption);
+                s = m->caption;
+            if (lineCnt++ == core->currentFocusLine)
+                core->printFocus(s);
+            else
+                core->print(s);
             m++;
             if (lineCnt == core->maxDisplayLine)
                 break;
@@ -61,8 +75,25 @@ void menuShow(menuCore *core)
     {
         lineCnt = core->currentFocusLine - core->maxDisplayLine + 1;
         while (lineCnt < core->currentFocusLine)
-            core->print(m[lineCnt++].caption);
-        core->printFocus(m[core->currentFocusLine].caption);
+        {
+            if (m[lineCnt].id == __Menu_Id_Variable)
+            {
+                sprintf(__MenuStr, "%s:%d", m[lineCnt].caption, *(m[lineCnt].val));
+                s = __MenuStr;
+            }
+            else
+                s = m[lineCnt].caption;
+            core->print(s);
+            lineCnt++;
+        }
+        if (m[core->currentFocusLine].id == __Menu_Id_Variable)
+        {
+            sprintf(__MenuStr, "%s:%d", m[core->currentFocusLine].caption, *(m[core->currentFocusLine].val));
+            s = __MenuStr;
+        }
+        else
+            s = m[lineCnt].caption;
+        core->printFocus(s);
     }
 }
 
@@ -102,7 +133,7 @@ void menuDown(menuCore *core)
 #define __Menu_LEFT 0
 #define __Menu_RIGHT 1
 #define __Menu_MID 2
-unsigned char __MenuSpecialUnit(menuCore *core, MenuUnit *m, unsigned char MenuKey)
+unsigned char static __MenuSpecialUnit(menuCore *core, MenuUnit *m, unsigned char MenuKey)
 {
     if (m->id == __Menu_Id_Go_Back)
     {
@@ -118,10 +149,11 @@ unsigned char __MenuSpecialUnit(menuCore *core, MenuUnit *m, unsigned char MenuK
     if (m->id == __Menu_Id_Variable)
     {
         if (MenuKey == __Menu_LEFT)
-            sprintf(m->caption, "%s: %d", m->varName, --*(m->val));
+            // sprintf(m->caption, "%s: %d", m->varName, --*(m->val));
+            --*(m->val);
         else if (MenuKey == __Menu_RIGHT)
-            sprintf(m->caption, "%s: %d", m->varName, ++*(m->val));
-
+            // sprintf(m->caption, "%s: %d", m->varName, ++*(m->val));
+            ++*(m->val);
         menuShow(core);
         return 0;
     }
@@ -147,4 +179,11 @@ void menuRight(menuCore *core)
     if (__MenuSpecialUnit(core, m + core->currentFocusLine, __Menu_RIGHT))
         if (m[core->currentFocusLine].right != NULL)
             m[core->currentFocusLine].right();
+}
+void menuMid(menuCore *core)
+{
+    MenuUnit *m = __MenuTop(core);
+    if (__MenuSpecialUnit(core, m + core->currentFocusLine, __Menu_MID))
+        if (m[core->currentFocusLine].mid != NULL)
+            m[core->currentFocusLine].mid();
 }

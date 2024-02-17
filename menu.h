@@ -19,7 +19,7 @@ struct __MENU_UNIT_STRUCT
     union
     {
         void (*right)(void);
-        char *varName;
+        // char *varName;
     };
 };
 
@@ -52,6 +52,7 @@ void menuUp(menuCore *core);
 void menuDown(menuCore *core);
 
 void menuLeft(menuCore *core);
+void menuMid(menuCore *core);
 void menuRight(menuCore *core);
 
 #define __Menu_Id_Go_Back 1
